@@ -1,0 +1,15 @@
+{
+  "name": "svg-to-react-convater",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "Naxrul Ahmed",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
