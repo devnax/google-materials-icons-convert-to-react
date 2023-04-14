@@ -26,18 +26,18 @@ const convert = async (dirname) => {
             const compName = file.replace('.svg', '').split("_").map(f => capitalizeFirstLetter(f)).join("")
             let content = fs.readFileSync(directory + `/${file}`).toString()
             content = content.replace('width="24"', ``)
-            content = content.replace('height="24"', `style={{fontSize: fontSize+"px", userSelect: "none", width: "1em", height: "1em", display: "inline-block", ...(style || {})}} {...rest}`)
+            content = content.replace('height="24"', `style={{fill: color, fontSize: fontSize+"px", userSelect: "none", width: "1em", height: "1em", display: "inline-block", ...(style || {})}} {...rest}`)
 
             const component = `import React, { HTMLAttributes } from 'react'
-import {theme} from '../IconBaseTheme'
+import {baseProps} from '../IconBaseTheme'
 
-export type Icon${compName}Props = HTMLAttributes<HTMLOrSVGElement> & {
+export type Icon${compName}Props = HTMLAttributes<SVGElement> & {
     fontSize?: number;
     color?: string;
 }
 
 const Icon${compName} = (props: Icon${compName}Props) => {
-    let { fontSize, color, style, ...rest }: any = {...(theme.current || {}), ...props}
+    let { fontSize, color, style, ...rest }: any = {...baseProps, ...props}
     fontSize = fontSize || 24
     return ${content}
 }
@@ -50,8 +50,6 @@ export default Icon${compName}
         });
     });
 }
-
-
 
 app.get('/', async (req, res) => {
     const dirs = ["filled", "outlined", "round", "sharp", "two-tone"]
