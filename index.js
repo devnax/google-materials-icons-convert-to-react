@@ -1,6 +1,7 @@
 const app = require("express")()
 const path = require('path');
 const fs = require('fs');
+const HTMLParser = require('node-html-parser')
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -25,33 +26,67 @@ const convert = async (dirname) => {
         files.forEach(function (file) {
             const compName = file.replace('.svg', '').split("_").map(f => capitalizeFirstLetter(f)).join("")
             let content = fs.readFileSync(directory + `/${file}`).toString()
-            content = content.replace('width="24"', ``)
-            content = content.replace('height="24"', `style={{fill: color, fontSize: fontSize+"px", userSelect: "none", width: "1em", height: "1em", display: "inline-block", ...(style || {})}} {...rest}`)
+            var parsed = HTMLParser.parse(content);
+            const svg = parsed.querySelector("svg")
+            const component = `import React from 'react'
+import Icon, { IconProps } from '../'
 
-            const component = `import React, { HTMLAttributes } from 'react'
-import {baseProps} from '../IconBaseTheme'
-
-export type Icon${compName}Props = HTMLAttributes<SVGElement> & {
-    fontSize?: number;
-    color?: string;
-}
-
-const Icon${compName} = (props: Icon${compName}Props) => {
-    let { fontSize, color, style, ...rest }: any = {...baseProps, ...props}
-    fontSize = fontSize || 24
-    return ${content}
+const Icon${compName} = (props: Omit<IconProps, "path">) => {
+    return <Icon 
+    {...props} 
+    >${svg.innerHTML}</Icon>
 }
 
 export default Icon${compName}
             `;
 
-            !fs.existsSync(outputDirectory) && fs.mkdirSync(outputDirectory);
+            !fs.existsSync(outputDirectory) && fs.mkdirSync(outputDirectory)
             fs.writeFileSync(outputDirectory + `/${compName}.tsx`, component)
         });
     });
 }
 
-app.get('/', async (req, res) => {
+app.get('/', async (_req, res) => {
+
+    const component = `import React, { SVGProps } from 'react'
+let baseProps = {};
+
+export const setIconBaseProps = (props: SVGProps<SVGElement>) => {
+    baseProps = props
+}
+
+
+export type IconProps = SVGProps<SVGElement> & {
+    fontSize?: number;
+    color?: string;
+}
+
+const Icon = (props: IconProps) => {
+    let { fontSize, color, style, children, ...rest }: any = {...baseProps, ...props}
+    fontSize = fontSize || 24
+    return <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24"
+    style={{
+        fill: color, 
+        fontSize: fontSize+"px", 
+        userSelect: "none", 
+        width: "1em", height: "1em", 
+        display: "inline-block", 
+        ...(style || {})}} 
+        {...rest}
+    >
+    {children}
+    </svg>
+}
+
+export default Icon
+            `;
+    const outputDirectory = path.join(__dirname, `icons/`);
+    !fs.existsSync(outputDirectory) && fs.mkdirSync(outputDirectory);
+    fs.writeFileSync(outputDirectory + `/index.tsx`, component)
+
+
     const dirs = ["filled", "outlined", "round", "sharp", "two-tone"]
     for (let dir of dirs) {
         await convert(dir)
